@@ -15,7 +15,7 @@ description: |
   `.agentignore` and `enable`/`disable` for per-agent toggles.
 argument-hint: "[command] [target] [--json] [--dry-run] [-p|-g]"
 metadata:
-  version: v0.19.24
+  version: v0.20.25
 ---
 
 # Skillshare CLI
@@ -42,7 +42,7 @@ skillshare install user/repo --track             # Enable `update` later
 skillshare install user/repo -b develop --all    # Install from branch
 skillshare install user/repo --track -b develop  # Track specific branch
 skillshare install user/repo -s pdf -p           # Install to project
-skillshare install                               # Reinstall all tracked remotes from config
+skillshare install                               # Rehydrate remote skills/tracked repos
 skillshare sync                                  # Always sync after install
 ```
 ### Extras (Rules, Commands, Prompts)
@@ -61,11 +61,44 @@ skillshare extras remove rules                       # Remove from config (sourc
 skillshare extras init agents --target ~/.claude/agents --flatten  # Flatten subdirs into root
 skillshare extras rules --mode copy                  # Change sync mode of a target
 skillshare extras agents --flatten                   # Enable flatten on existing target
+skillshare extras rules --add-target ~/.cursor/rules            # Add a target to an existing extra
+skillshare extras rules --remove-target ~/.cursor/rules --prune # Remove a target (--prune deletes synced files)
 skillshare sync extras                               # Sync all extras to targets
 skillshare sync extras --dry-run --force             # Preview / overwrite conflicts
 skillshare sync --all                                # Sync skills + extras together
 ```
-See [extras.md](references/extras.md) for details.
+Project extras always read from `<sources.extras>/<name>` (default `.skillshare/extras/<name>`); per-extra `source` and `extras source` are global-only. For project agents, prefer target `agents:` unless you need extras-only flatten/extension.
+
+A target can set an `extension:` field in config.yaml to transform each source file during sync (e.g. markdown → TOML for Gemini/Codex); implies `copy` mode. See [extras.md](references/extras.md) for details.
+### Extensions (Content Transformation)
+```bash
+# Extension is a directory at .skillshare/extensions/<name>/
+# extension.yaml controls: run command, output_ext, description
+# Official extensions: https://github.com/runkids/skillshare/tree/main/extensions
+```
+
+extension.yaml format:
+```yaml
+run: ["node", "convert.js"]   # or ["python3", "convert.py"] etc.
+output_ext: toml              # renames output file extension
+description: "MD → Codex TOML"
+```
+
+Add extension to an extras target in config.yaml:
+```yaml
+extras:
+  - name: agents
+    targets:
+      - path: .claude/agents          # plain copy/merge
+      - path: .codex/agents
+        extension: codex-agents       # transform + rename to .toml
+```
+
+Caveats:
+- `extension:` is only supported on **extras** targets — native agents targets ignore it
+- Implies `copy` mode; merge/symlink won't apply
+- Claude Code sets NODE_OPTIONS that break node extensions — use `env -u NODE_OPTIONS node convert.js` in run
+- Files missing required frontmatter fields fail validation and are skipped
 ### Creating & Discovering Skills
 ```bash
 skillshare new my-skill                          # Create with interactive pattern selection
@@ -102,6 +135,7 @@ skillshare pull                                           # Cross-machine: pull 
 ```bash
 skillshare hub add https://example.com/hub.json          # Save a hub source
 skillshare hub add https://example.com/hub.json --label my-hub  # With custom label
+skillshare hub add git@ghe.corp.com:team/skills.git --label ghe  # SSH/private/GHE hub source
 skillshare hub list                                      # List saved hubs
 skillshare hub default my-hub                            # Set default hub
 skillshare hub remove my-hub                             # Remove a hub
@@ -136,8 +170,8 @@ skillshare sync --json                         # Sync results as JSON
 skillshare diff --json                         # Diff results as JSON
 skillshare install user/repo --json            # Install result as JSON (implies --force --all)
 skillshare update --all --json                 # Update results as JSON
-skillshare uninstall my-skill --json           # Uninstall result as JSON (implies --force)
-skillshare collect claude --json               # Collect result as JSON (implies --force)
+skillshare uninstall my-skill --json           # Global JSON; dirty tracked repos still require --force
+skillshare collect claude --json               # Collect result as JSON; existing items still require --force
 skillshare target list --json                  # Target list as JSON
 skillshare list --json                         # Skill list as JSON
 skillshare search react --json                 # Search results as JSON
@@ -161,7 +195,7 @@ See [TROUBLESHOOTING.md](references/TROUBLESHOOTING.md) for more.
 | `sync`, `collect` | ✓ (auto) | ✓ |
 | `install`, `uninstall`, `update`, `check`, `search`, `new` | ✓ (`-p`) | ✓ (except new) |
 | `target`, `audit`, `analyze`, `trash`, `log`, `hub` | ✓ (`-p`) | ✓ (target list, audit, analyze, log) |
-| `extras init/list/remove/collect/source/mode` | ✓ (`-p`, except source) | ✓ (list, mode) |
+| `extras init/list/remove/collect/source` (+ `--mode`/`--add-target`/`--remove-target` flags on `extras <name>`) | ✓ (`-p`, except source) | ✓ (list, mode, targets) |
 | `enable`, `disable` | ✓ (auto) | ✗ |
 | `commit`, `push`, `pull`, `backup`, `restore` | ✗ | ✗ |
 | `tui`, `upgrade` | ✗ | ✗ |
@@ -173,6 +207,7 @@ See [TROUBLESHOOTING.md](references/TROUBLESHOOTING.md) for more.
 3. **Audit** — `install` auto-scans; CRITICAL blocks. `--force` to override, `--skip-audit` to bypass. Detects hardcoded secrets (API keys, tokens, private keys).
 4. **Uninstall safely** — moves to trash (7 days). `trash restore <name>` to undo. **NEVER** `rm -rf` symlinks.
 5. **Output** — `--json` for structured data (12 commands support it, see Quick Lookup). `--no-tui` for plain text on TUI commands (`list`, `log`, `audit`, `analyze`, `diff`, `trash list`, `backup list`, `target list`). `tui off` disables TUI globally. `--dry-run` to preview.
+6. **Node extensions in Claude Code** — `NODE_OPTIONS` is preloaded by the Claude Code harness and causes node to crash when running extensions. Always use `run: ["env", "-u", "NODE_OPTIONS", "node", "convert.js"]` in `extension.yaml` when writing extensions that use Node.js.
 
 ## References
 | Topic | File |
