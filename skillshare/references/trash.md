@@ -1,5 +1,7 @@
 # Trash (Soft-Delete)
 
+When moving a skill to trash across filesystems, nested file and directory links are preserved as links with their original target text; their targets are never copied or deleted. On Windows a junction stays a junction, so no Developer Mode is needed.
+
 `skillshare uninstall` moves skills and agents to trash with 7-day retention instead of permanent deletion.
 
 ## Commands
@@ -29,7 +31,7 @@ skillshare trash restore <name> -p       # Restore to project source
 skillshare trash agents list -p          # Project agent trash
 ```
 
-Auto-detects mode when `.skillshare/config.yaml` exists.
+Use `-p` or `-g` to select scope explicitly when both configurations exist.
 
 ## Behavior
 
@@ -42,7 +44,7 @@ Auto-detects mode when `.skillshare/config.yaml` exists.
 
 ```bash
 # Undo an accidental uninstall
-skillshare trash list                   # Find the skill
+skillshare trash list --no-tui          # Find the skill
 skillshare trash restore my-skill       # Restore it
 skillshare sync                         # Re-sync to targets
 

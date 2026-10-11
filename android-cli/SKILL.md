@@ -1,6 +1,6 @@
 ---
 name: android-cli
-description: Orchestrates Android development tasks including project creation, deployment, SDK management, and environment diagnostics using the `android` command-line tool.
+description: Provides instructions for installing and using the `android` CLI. The `android` command-line tool is a critical tool for Android development and helps you create new Android projects, run Android apps on devices, manage and interact with Android virtual devices (including screenshots and UI inspection), manage Android SDK components, look up official Android documentation, and discover and install official Android skills.
 ---
 # Android CLI Specialist
 
@@ -8,10 +8,11 @@ This skill provides instructions for using the `android` CLI tool. The tool incl
 
 ## Installation
 
-If the android tool is not in the path install it. To install run the following command:
+If the android tool is not in the path, install it. To install run the following command:
 Linux: curl -fsSL https://dl.google.com/android/cli/latest/linux_x86_64/install.sh | bash
-Mac: curl -fsSL https://dl.google.com/android/cli/latest/darwin_arm64/install.sh | bash
-Windows: curl.exe -fsSL https://dl.google.com/android/cli/latest/windows_x86_64/install.cmd -o "%TEMP%\i.cmd" && "%TEMP%\i.cmd"
+Mac Arm: curl -fsSL https://dl.google.com/android/cli/latest/darwin_arm64/install.sh | bash
+Mac Intel: curl -fsSL https://dl.google.com/android/cli/latest/darwin_x86_64/install.sh | bash
+Windows: curl -fsSL https://dl.google.com/android/cli/latest/windows_x86_64/install.cmd -o "%TEMP%\i.cmd" && "%TEMP%\i.cmd"
 
 ## SDK management
 To manage the installation of Android SDKs and tools, use the `sdk` command. For example:
@@ -26,11 +27,19 @@ Create projects from templates using the `create` command.
 
 For example: `android create empty-activity --name="My App" --output=./my-app`
 
-## Interacting with devices
-For more information on interacting with running devices, see [here](references/interact.md)
+## Interacting with Android devices
+Use the `android layout` command to inspect the UI layout of an Android application in JSON format.
+Use the `android screen` command to visually inspect the UI and obtain bounding coordinates for visual regions.
 
-## Running journey tests
-For more information on running journeys, see [here](references/journeys.md)
+**IMPORTANT:** Before using `android layout` or `android screen`, you MUST read this reference: [interact.md](references/interact.md)
+The reference file [interact.md](references/interact.md) contains instructions for properly interacting with Android devices. Follow its instructions exactly.
+
+### Running journey tests
+Journey tests involve device interaction; use the `android layout` and `android screen` commands to evaluate Journeys.
+The instructions for device interaction apply here as well.
+
+**IMPORTANT:** Before evaluating a journey, you MUST read this reference: [journeys.md](references/journeys.md)
+The reference file [journeys.md](references/journeys.md) contains instructions for correctly evaluating an Android journey. Follow its instructions exactly.
 
 ## Doc searching
 The `docs` command searches authoritative, high-quality Android developer documentation in the Android Knowledge Base.
@@ -52,15 +61,11 @@ Manage Android Virtual Devices (AVDs) using the `android emulator` command
 
 ## Capturing screenshots
 
-Capture an image of the current screen of a connected Android device and output it to a file using the `android screenshot` command.
+Capture an image of the current screen of a connected Android device and output it to a file using the `android screen` command.
 
 ## Managing skills
 
-Manage antigravity agent skills for Android using the `android skills` command.
-
-## Inspecting UI Layouts
-
-Use the `android layout` command to inspect the UI layout of an Android application. It returns the layout tree of an Android application in JSON format. When debugging UI errors, this is often a much faster approach than taking a screenshot.
+Manage agent skills for Android using the `android skills` command.
 
 ## Updating the CLI
 
@@ -68,137 +73,366 @@ Update the Android CLI using the `android update` command.
 
 # `android help` output
 
-Usage: android [-hV] [--sdk=PARAM] [COMMAND]
-  -h, --help        Show this help message and exit.
-      --sdk=PARAM   Path to the Android SDK
-  -V, --version     Print version information and exit.
+Usage: android [-Vhv] [--sdk=PARAM] [COMMAND]
+  -h, --help       Show the help message for this command
+      --sdk=PARAM  Path to the Android SDK
+  -v, --verbose    Enable verbose output for troubleshooting
+  -V, --version    Print version information and exit
 Commands:
-  create    Create a new Android project
-  describe  Analyzes an Android project to generate descriptive metadata.
-  docs      Android documentation commands
-  emulator  Emulator commands
-  help      Shows the help of all commands
-  info      Print environment information (SDK Location, etc.)
-  init      Initializes the environment (eg. skills) for Android CLI.
-  layout    Returns the layout tree of an application
-  run       Deploy an Android Application
-  screen    Commands to view the device
-  sdk       Download and list SDK packages
-  skills    Manage skills
-  update    Update the Android CLI
+  completion  Installs shell autocomplete configuration for the Android CLI in
+              the current user profile
+  create      Create a new Android project from available templates. Allows
+              specifying project name, output directory, minSdk, and dry-run
+              execution
+  describe    Analyzes an Android project to generate descriptive metadata. This
+              command identifies and outputs the paths to JSON files that detail
+              the project's structure, including build targets and their
+              corresponding output artifact locations (e.g., APKs). This
+              information enables other tools and commands to locate build
+              artifacts efficiently
+  docs        Android documentation commands for searching and fetching
+              developer documentation from the official knowledge base
+  emulator    Manage Android Virtual Devices (AVDs). Includes commands to start,
+              stop, list, and view details about emulators
+  help        Shows the help of all commands
+  info        Print environment information including SDK location, connected
+              devices, and configuration variables. Use specific fields to
+              narrow the output
+  init        Initializes the environment for the Android CLI. Sets up required
+              configurations, directories, and default skills
+  install     Install an Android Application (one or more APKs) to a connected
+              device or emulator without activating any components using
+              incremental optimizations for faster deployment than adb
+  layout      Returns the layout tree of an application
+  run         Build, deploy, and launch an Android application on a connected
+              device or emulator
+  screen      Commands to view the device
+  sdk         Manage the Android SDK installation. Includes commands to install,
+              update, remove, and list available and installed SDK packages
+  skills      Manage Android CLI skills. Includes commands to install, remove,
+              list, and search for skills by keyword
+  studio      Android Studio commands
+  update      Update the Android CLI to the latest version
+
+completion
+          Usage: android completion [-h] [<shell>]
+          Installs shell autocomplete configuration for the Android CLI in the
+          current user profile
+          
+          Options:
+            -h, --help       Show the help message for this command
+          
+          android options:
+                --sdk=PARAM  Path to the Android SDK
+            -v, --verbose    Enable verbose output for troubleshooting
+            -V, --version    Print version information and exit
+          
+          Positional Parameters:
+            <shell>  If provided, print the given shell completion without
+                     installing. Supported: bash, zsh
 
 create
-          Usage: android create [-h] [--verbose] [--list] [--minSdk=api]
-                                --name=applicationName [-o=dest-path] [template-name]
-          Create a new Android project
-                [template-name]      The template name
-            -h, --help               Show this help message and exit.
-                --minSdk=api         The 'minSdk' supported by the application (default
-                                       is defined in the template)
-                --name=applicationName
-                                     The name of the application (e.g. 'My Application')
-            -o, --output=dest-path   The destination project directory path (default is
-                                       '.')
-                --verbose            Enables verbose output
-                --list               List all available templates
+          Usage: android create [-h] [--application-id=PARAM] [--list] [--min-sdk=PARAM]
+                                [--name=PARAM] [--namespace=PARAM] [--output=PARAM]
+                                [<template-name>]
+          Create a new Android project from available templates. Allows
+          specifying project name, output directory, minSdk, and dry-run
+          execution
+          
+          Options:
+                --application-id=PARAM  The application ID for the application
+                                        (e.g. 'com.example.myapp')
+            -h, --help                  Show the help message for this command
+                --list                  List all available templates
+                --min-sdk=PARAM         The 'minSdk' supported by the
+                                        application (default is defined in the
+                                        template)
+                --name=PARAM            The name of the application (e.g. 'My
+                                        Application')
+                --namespace=PARAM       The namespace for resources and package
+                                        name for Kotlin source files
+            -o, --output=PARAM          The destination project directory path
+                                        (default is '.')
+          
+          android options:
+                --sdk=PARAM             Path to the Android SDK
+            -v, --verbose               Enable verbose output for
+                                        troubleshooting
+            -V, --version               Print version information and exit
+          
+          Positional Parameters:
+            <template-name>  The template name
 
 describe
-          Usage: android describe [-hV] [--project_dir=PARAM]
-          Analyzes an Android project to generate descriptive metadata.
-          This command identifies and outputs the paths to JSON files that detail the
-          project's structure, including build targets and their corresponding output
-          artifact locations (e.g., APKs). This information enables other tools and
-          commands to locate build artifacts efficiently.
-            -h, --help                Show this help message and exit.
-                --project_dir=PARAM   The project directory to describe
-            -V, --version             Print version information and exit.
+          Usage: android describe [-h] [--project_dir=PARAM]
+          Analyzes an Android project to generate descriptive metadata. This
+          command identifies and outputs the paths to JSON files that detail the
+          project's structure, including build targets and their corresponding
+          output artifact locations (e.g., APKs). This information enables other
+          tools and commands to locate build artifacts efficiently
+          
+          Options:
+            -h, --help               Show the help message for this command
+                --project_dir=PARAM  The project directory to describe
+          
+          android options:
+                --sdk=PARAM          Path to the Android SDK
+            -v, --verbose            Enable verbose output for troubleshooting
+            -V, --version            Print version information and exit
 
 docs
           Usage: android docs [-h] [COMMAND]
-          Android documentation commands
-            -h, --help   Show this help message and exit.
+          Android documentation commands for searching and fetching developer
+          documentation from the official knowledge base
+          
+          Options:
+            -h, --help       Show the help message for this command
+          
+          android options:
+                --sdk=PARAM  Path to the Android SDK
+            -v, --verbose    Enable verbose output for troubleshooting
+            -V, --version    Print version information and exit
           Commands:
-            search  Search Android documentation
-            fetch   Fetch Android documentation
+            fetch   Fetch an Android documentation article from a URL (kb://...)
+            search  Search Android documentation. Enclose keywords in quotes
 
 emulator
           Usage: android emulator [-h] [COMMAND]
-          Emulator commands
-            -h, --help   Show this help message and exit.
+          Manage Android Virtual Devices (AVDs). Includes commands to start,
+          stop, list, and view details about emulators
+          
+          Options:
+            -h, --help       Show the help message for this command
+          
+          android options:
+                --sdk=PARAM  Path to the Android SDK
+            -v, --verbose    Enable verbose output for troubleshooting
+            -V, --version    Print version information and exit
           Commands:
             create  Creates a virtual device
-            start   Launches the specified virtual device. This command will return when
-                      the emulator is fully started and ready to use.
-            stop    Stops the specified virtual device
             list    Lists available virtual devices
             remove  Delete a virtual device
+            start   Launches the specified virtual device. This command will
+                    return when the emulator is fully started and ready to use
+            stop    Stops the specified virtual device
 
 help
-          Usage: android help [COMMAND]
+          Usage: android help [-h] [COMMAND]
           Shows the help of all commands
-                [COMMAND]   The command to show help for
+          
+          Options:
+            -h, --help       Show the help message for this command
+          
+          android options:
+                --sdk=PARAM  Path to the Android SDK
+            -v, --verbose    Enable verbose output for troubleshooting
+            -V, --version    Print version information and exit
+          
+          Positional Parameters:
+            COMMAND  The command to show help for
 
 info
-          Usage: android info <field>
-          Print environment information (SDK Location, etc.)
-                <field>   The specific field to print the value of. If omitted print all.
+          Usage: android info [-h] [<field>]
+          Print environment information including SDK location, connected
+          devices, and configuration variables. Use specific fields to narrow
+          the output
+          
+          Options:
+            -h, --help       Show the help message for this command
+          
+          android options:
+                --sdk=PARAM  Path to the Android SDK
+            -v, --verbose    Enable verbose output for troubleshooting
+            -V, --version    Print version information and exit
+          
+          Positional Parameters:
+            <field>  The specific field to print the value of. If omitted print
+                     all
 
 init
-          Usage: android init
-          Initializes the environment (eg. skills) for Android CLI.
+          Usage: android init [-h]
+          Initializes the environment for the Android CLI. Sets up required
+          configurations, directories, and default skills
+          
+          Options:
+            -h, --help       Show the help message for this command
+          
+          android options:
+                --sdk=PARAM  Path to the Android SDK
+            -v, --verbose    Enable verbose output for troubleshooting
+            -V, --version    Print version information and exit
+
+install
+          Usage: android install [-h] [--apks=PARAM] [--device=PARAM] [--install-options=PARAM]
+                                 [--use-delta-install]
+          Install an Android Application (one or more APKs) to a connected
+          device or emulator without activating any components using incremental
+          optimizations for faster deployment than adb
+          
+          Options:
+                --apks=PARAM             The paths to the APKs, comma separated
+                --device=PARAM           The device serial number
+            -h, --help                   Show the help message for this command
+                --install-options=PARAM  Additional options/flags to pass to
+                                         package manager install (e.g. -g,-d)
+                --use-delta-install      Use fast delta install (speeds up
+                                         incremental updates by transferring
+                                         only modified code and resources;
+                                         default: true)
+          
+          android options:
+                --sdk=PARAM              Path to the Android SDK
+            -v, --verbose                Enable verbose output for
+                                         troubleshooting
+            -V, --version                Print version information and exit
 
 layout
-          Usage: android layout [-dhp] [--device=PARAM] [-o=PARAM]
+          Usage: android layout [-dhp] [--device=PARAM] [--flat] [--full] [--no-idle]
+                                [--output=PARAM]
           Returns the layout tree of an application
-            -d, --diff           Returns a flat list of the layout elements that have
-                                   changed since the last invocation of ui-dump
-                --device=PARAM   The device serial number
-            -h, --help           Show this help message and exit.
-            -o, --output=PARAM   Writes the layout tree to the specified file or
-                                   directory. If omitted, prints the tree to standard
-                                   output
-            -p, --pretty         Pretty-prints the returned JSON
+          
+          Options:
+                --device=PARAM  The device serial number
+            -d, --diff          Deprecated; no-op flag. Will be removed in a
+                                future release
+                --flat          Returns a flat list instead of a tree
+                --full          Return the full tree, including non-interactive
+                                and hidden elements
+            -h, --help          Show the help message for this command
+                --no-idle       Don't wait for layout idle state when fetching
+                                layout
+            -o, --output=PARAM  Writes the layout to the specified file or
+                                directory. If omitted, prints to standard output
+            -p, --pretty        Pretty-prints the returned JSON
+          
+          android options:
+                --sdk=PARAM     Path to the Android SDK
+            -v, --verbose       Enable verbose output for troubleshooting
+            -V, --version       Print version information and exit
 
 run
-          Usage: android run [-h] [--debug] [--activity=PARAM] [--device=PARAM]
-                             [--type=PARAM] [--apks=PARAM[,PARAM...]]...
-          Deploy an Android Application
-                --activity=PARAM   The activity name
-                --apks=PARAM[,PARAM...]
-                                   The paths to the APKs
-                --debug            Run in debug mode
-                --device=PARAM     The device serial number
-            -h, --help             Show this help message and exit.
-                --type=PARAM       The component type (ACTIVITY, SERVICE, etc.)
+          Usage: android run [-h] [--activity=PARAM] [--apks=PARAM] [--debug] [--device=PARAM]
+                             [--install-options=PARAM] [--type=PARAM] [--use-delta-install]
+          Build, deploy, and launch an Android application on a connected device
+          or emulator
+          
+          Options:
+                --activity=PARAM         The activity name
+                --apks=PARAM             The paths to the APKs, comma separated
+                --debug                  Run in debug mode
+                --device=PARAM           The device serial number
+            -h, --help                   Show the help message for this command
+                --install-options=PARAM  Additional options/flags to pass to
+                                         package manager install (e.g. -g,-d)
+                --type=PARAM             The component type (ACTIVITY,
+                                         WATCH_FACE, TILE, COMPLICATION,
+                                         DECLARATIVE_WATCH_FACE, WEAR_WIDGET)
+                --use-delta-install      Use fast delta install (speeds up
+                                         incremental updates by transferring
+                                         only modified code and resources;
+                                         default: true)
+          
+          android options:
+                --sdk=PARAM              Path to the Android SDK
+            -v, --verbose                Enable verbose output for
+                                         troubleshooting
+            -V, --version                Print version information and exit
 
 screen
           Usage: android screen [-h] [COMMAND]
           Commands to view the device
-            -h, --help   Show this help message and exit.
+          
+          Options:
+            -h, --help       Show the help message for this command
+          
+          android options:
+                --sdk=PARAM  Path to the Android SDK
+            -v, --verbose    Enable verbose output for troubleshooting
+            -V, --version    Print version information and exit
           Commands:
             capture  Outputs the device screen to a PNG
-            resolve  Target UI elements visually
+            resolve  Target UI elements visually. Substitutes bounding box
+                     coordinates from a annotated screenshot into a string.
+                     Replaces all instances of '#N' with the center coordinates
+                     of the bounding box labeled 'N'
 
 sdk
-          Usage: android sdk [COMMAND]
-          Download and list SDK packages
+          Usage: android sdk [-h] [--ignore-outdated-xmls] [--platform=PARAM]
+                             [COMMAND]
+          Manage the Android SDK installation. Includes commands to install,
+          update, remove, and list available and installed SDK packages
+          
+          Options:
+            -h, --help                  Show the help message for this command
+                --ignore-outdated-xmls  When installing or updating packages, do
+                                        not update other packages xmls
+                --platform=PARAM        Target platform <os>_<arch> (e.g.
+                                        linux_x86_64, mac_arm64, windows_x86),
+                                        defaults to current host
+          
+          android options:
+                --sdk=PARAM             Path to the Android SDK
+            -v, --verbose               Enable verbose output for
+                                        troubleshooting
+            -V, --version               Print version information and exit
           Commands:
             install  Install SDK packages
-            update   Update one or all packages to the latest version
-            remove   Remove a package from the SDK
             list     List installed and available SDK packages
+            remove   Remove packages from the SDK
+            update   Update one or all packages to the latest version
 
 skills
-          Usage: android skills [COMMAND]
-          Manage skills
+          Usage: android skills [-h] [COMMAND]
+          Manage Android CLI skills. Includes commands to install, remove, list,
+          and search for skills by keyword
+          
+          Options:
+            -h, --help       Show the help message for this command
+          
+          android options:
+                --sdk=PARAM  Path to the Android SDK
+            -v, --verbose    Enable verbose output for troubleshooting
+            -V, --version    Print version information and exit
           Commands:
-            add     Install a skill
-            remove  Remove a skill
-            list    List available skills
-            find    Find skills by keyword
+            add     Install a specific skill by its ID to your environment
+            find    Search for available skills in the repository matching a
+                    keyword
+            list    List installed and available skills
+            remove  Remove an installed skill by its ID
+            update  Update installed skills
+
+studio
+          Usage: android studio [-h] [COMMAND]
+          Android Studio commands
+          
+          Options:
+            -h, --help       Show the help message for this command
+          
+          android options:
+                --sdk=PARAM  Path to the Android SDK
+            -v, --verbose    Enable verbose output for troubleshooting
+            -V, --version    Print version information and exit
+          Commands:
+            analyze-file            Analyze a file in Android Studio
+            check                   Check the status of running Studio instances
+            find-declaration        Find declaration of a symbol
+            find-usages             Find usages of a symbol
+            open-file               Open a file in Android Studio
+            render-compose-preview  Render a Compose preview in Android Studio
+            version-lookup          Looks up the latest available versions on
+                                    the internet of maven artifacts, Android
+                                    versions, and more
 
 update
-          Usage: android update [--url=PARAM]
-          Update the Android CLI
-                --url=PARAM   The URL to download the update from
+          Usage: android update [-h] [--url=PARAM]
+          Update the Android CLI to the latest version
+          
+          Options:
+            -h, --help       Show the help message for this command
+                --url=PARAM  The URL to download the update from
+          
+          android options:
+                --sdk=PARAM  Path to the Android SDK
+            -v, --verbose    Enable verbose output for troubleshooting
+            -V, --version    Print version information and exit
 
