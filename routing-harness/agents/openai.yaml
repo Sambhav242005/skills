@@ -1,6 +1,8 @@
 interface:
   display_name: "Routing Harness"
   short_description: "Adaptive workers, advisor checks, and local usage dashboard"
+  icon_small: "./assets/logo.png"
+  icon_large: "./assets/logo.png"
   default_prompt: "Use $routing-harness for this task with adaptive workers, supported reasoning levels, and advisor review when needed."
 policy:
   allow_implicit_invocation: false
