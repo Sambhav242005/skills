@@ -5,7 +5,7 @@ description: Coordinate an explicitly requested AI-agent workflow with adaptive 
 
 # Routing harness
 
-This is an opt-in orchestration skill, not an execution engine. Use the host's supported tools and adapt to its exposed capabilities. Do not build a harness application, install a service, or change global model settings as part of using this skill.
+This is an opt-in orchestration skill with an optional local usage dashboard, not an agent execution engine. Use the host's supported tools and adapt to its exposed capabilities. Do not install a service or change global model settings as part of using this skill.
 
 ## Activate and establish the task
 
@@ -75,6 +75,8 @@ Read [references/accounting.md](references/accounting.md) when recording or repo
 
 Record task start/end, routing decisions, each consultation/assignment, overrides, verification, retries, repairs, acceptance, and failures. Use native returned thread IDs when available; keep agent paths and thread IDs distinct. Preserve records across compaction and resume from them.
 
-At checkpoints and completion show a compact matrix with model/effort, consultations or assignments, measured tokens, cache-hit percentage, advisor triggers/outcomes, verification status, and repair attribution. Include zero-call rows. Mark unavailable metrics explicitly; do not invent a token dashboard or claim a collector is installed.
+At checkpoints and completion show a compact matrix with model/effort, consultations or assignments, measured tokens, cache-hit percentage, advisor triggers/outcomes, verification status, and repair attribution. Include zero-call rows. Mark unavailable metrics explicitly; do not invent measurements or claim a background collector is running.
+
+When the user wants a dashboard or CSV exports, use the bundled standard-library Python scripts following [references/dashboard.md](references/dashboard.md). Python 3.10+ and local execution are required only for this optional feature. Read only explicitly selected telemetry files/sessions. Produce reports outside the skill directory so logs and private reports never enter a distributable skill ZIP. The dashboard reads telemetry; it does not spawn agents or enforce model routing. Never upload local usage reports to a marketplace as sample media without separate user authorization. Maintain the event ledger during the task so roles, advisor calls, and repairs can be attributed; existing transcript counters alone do not establish these facts.
 
 Finish with the outcome, verification evidence, outstanding limitations, advisor and router counts, and the usage matrix. Evaluate routing based on total usage including repairs and first-pass acceptance, not the worker's initial token count alone. Do not silently rewrite this policy from a small sample; propose evidence-backed adjustments.

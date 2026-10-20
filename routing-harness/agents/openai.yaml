@@ -1,6 +1,6 @@
 interface:
   display_name: "Routing Harness"
-  short_description: "Adaptive workers, advisor checks, and usage visibility"
+  short_description: "Adaptive workers, advisor checks, and local usage dashboard"
   default_prompt: "Use $routing-harness for this task with adaptive workers, supported reasoning levels, and advisor review when needed."
 policy:
   allow_implicit_invocation: false

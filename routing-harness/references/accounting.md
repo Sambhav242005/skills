@@ -1,6 +1,6 @@
 # Task records and honest accounting
 
-This skill does not install a collector, dashboard, custom agent profiles, or background process. Use host-supported delegation and settings controls where available; otherwise record the declared fallback mode. Scripts drafted outside the skill are not part of its installation.
+The optional bundled dashboard reads explicitly selected local telemetry and generates HTML/CSV/JSON on demand. It installs no background process or custom agent profiles. Use host-supported delegation and settings controls where available; otherwise record the declared fallback mode. See [dashboard.md](dashboard.md) for commands, host formats, and known limits.
 
 ## Record shape
 
@@ -14,14 +14,17 @@ Relevant event types:
 - `consultation`: router/advisor assignment ID, trigger, concise question, outcome. Count each initial prompt and follow-up consultation once, not each internal model request or tool call. A single consultation may have many model requests.
 - `verification`: observed settings, source, checks actually executed, outcomes, evidence references, and uncertainty.
 - `assignment_end`: accepted, failed, interrupted, or abandoned; whether a later capable-worker assignment repaired it. Record an accepted outcome only after lead verification.
+- `retry`: a corrected attempt on an existing assignment, with assignment_id and failure evidence. When retrying through a new dispatch, use retry_of instead; do not record both for the same attempt.
 - `usage_snapshot`: source, measured time range, task/assignment attribution, available raw usage counters, and unavailable fields.
 - `task_end`: outcome, verification, counts, and remaining limitations. Incomplete objectives stay active or interrupted rather than appearing completed.
 
 Only the lead owns the ledger. Workers return facts to the lead to avoid concurrent writes and inconsistent attribution. Record substantial changes or corrections as new events rather than erasing failures. Keep secrets and raw private transcripts out of the ledger; store concise evidence and local file references.
 
+For dashboard joins include `host` (`codex`, `claude`, or `opencode`) and `session_id` in task_start/dispatch events, plus the real `agent_id` when present. Do not confuse Claude's shared parent session ID with a child agent ID. Record `role` on consultations, `passed: true/false` on lead verification, and `repair_of` on repair dispatches. Use timestamps with a timezone. A manifest may explicitly bind older sessions to tasks when the ledger did not record those identifiers.
+
 ## Measurement boundaries
 
-Use telemetry exposed by the host or explicitly inspect local session logs for this task and its linked agents. Do not read unrelated conversation content. Resolve logs by thread ID and parent linkage; do not infer identity solely from the newest file or a nickname. If logs are unavailable or their structure is not understood, report unavailable rather than implementing a parser as part of this skill.
+Use telemetry exposed by the host or explicitly selected local logs for this task and its linked agents. Do not read unrelated conversation content. Resolve logs by thread ID and parent linkage; do not infer identity solely from the newest file or a nickname. The bundled adapters understand selected Codex/Claude JSONL and OpenCode exports/database formats; unsupported formats produce warnings. Unknown metrics remain unavailable.
 
 Host formats differ: prefer documented host/provider usage fields and do not assume another host uses Codex counters. As an optional Codex-specific example, local JSONL logs may expose `session_meta` identity/parent linkage, `turn_context` model and effort, and `event_msg` / `token_count` usage. These are observed formats, not a stable public interface. Report requested and observed settings separately and identify the source and snapshot time.
 
