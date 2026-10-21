@@ -1,0 +1,4 @@
+interface:
+  display_name: "Premium App UX"
+  short_description: "Improve complete journeys, feedback, and error recovery"
+  default_prompt: "Use $premium-app-ux to inspect this app's main user journey, fix gaps in feedback, consistency, and recovery, and verify the changed experience."
