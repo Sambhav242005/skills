@@ -4,7 +4,7 @@ Skillshare keeps MCP server definitions in one source and writes each Agent's na
 config file from it. It writes settings only: it never starts a configured server, checks
 connectivity, resolves a secret or copies OAuth credentials. The exceptions are
 `mcp check --live`, which starts or calls servers only when asked, and `mcp serve`,
-which runs Skillshare's own read-only skills server.
+which runs Skillshare's own skills server, read-only unless `mcp.serve.edit` is set.
 
 ## Commands
 
@@ -24,8 +24,8 @@ skillshare mcp restore BACKUP_ID --no-tui            # Apply restoration; source
 skillshare mcp check --json                          # Static check: variables, commands, version pins, DNS, sync state
 skillshare mcp check --live --timeout 30s --json     # Also start/call each server: serverInfo, protocol, tools
 skillshare mcp check docs --live --accept-tools      # Accept the tool definitions docs lists now as the baseline
-skillshare mcp serve [--target NAME] [--http ADDR [--tls-cert F --tls-key F]]  # Serve skills read-only over MCP (SEP-2640)
-skillshare mcp serve --check [--target NAME]         # List skills serve would skip, then exit
+skillshare mcp serve [--target NAME] [--http ADDR [--tls-cert F --tls-key F] [--http-allow-insecure]]  # Serve skills over MCP (SEP-2640)
+skillshare mcp serve --check [--target NAME]         # List skipped, editable and Executor-index skills, then exit
 ```
 
 ## Automation rules
@@ -65,14 +65,30 @@ skillshare mcp serve --check [--target NAME]         # List skills serve would s
   gateways): stdio by default, global unless `-p`. `--target NAME` applies that target's
   filters. Skipped skills (`SKILL.md` a link or not starting with frontmatter, name not matching
   its directory, description missing or over 1,024 characters, compatibility empty or over 500, over 512 files/16 MiB) are
-  listed on stderr; `--check` lists them without serving. `--http` on a non-loopback address requires `SKILLSHARE_MCP_TOKEN` and `--tls-cert`/`--tls-key` (or bind loopback behind a TLS proxy). Cross-origin browser requests are refused.
+  listed on stderr; `--check` lists them without serving. `--http` on a non-loopback address requires `SKILLSHARE_MCP_TOKEN` and, by default, `--tls-cert`/`--tls-key` (or bind loopback behind a TLS proxy). On a trusted private network, explicitly opt in to plain HTTP with `--http-allow-insecure`; this logs a startup warning and still requires the token. Cross-origin browser requests to the MCP endpoint are refused.
   Do not connect local Agents that already sync skills; they would see each skill twice.
   Connect one with `mcp add skillshare --target CLIENT --sync -- skillshare mcp serve`, or a
   remote `url` with `bearerToken: {fromEnv: SKILLSHARE_MCP_TOKEN}`. Agents with the Skills
   extension load skills natively; as of October 2026 Codex, Cursor, VS Code, Goose and Pi
   lack it and Claude Code's is off by default, so the server also offers `list_skills`
-  (`query` filters) and `read_skill` tools, hidden from clients that declare the extension. Verify the server with
+  (`query` filters) and `read_skill` tools, marked `readOnlyHint` and hidden from clients that declare the extension. Verify the server with
   `npx @modelcontextprotocol/inspector --cli skillshare mcp serve --method skills/list --verify`.
+- `mcp.serve.edit.skills` (flat-name patterns, like `include`) lets clients change
+  existing files of those skills; `preview_ttl` defaults to `30m`. `preview_skill_edit`
+  (uri, `read_skill`'s revision, full content) writes nothing and returns the diff, audit
+  and a preview id; `apply_skill_edit` (preview id, `destructiveHint`) saves exactly that.
+  With editing on, `read_skill` ends with `Revision: sha256:...` (the `skills/list` digest),
+  which is not part of the content. Refusals write nothing: `not_writable` (unlisted,
+  tracked repo, installed or nested in an installed skill), `conflict`, `invalid`,
+  `audit_blocked` (any finding at or above `audit.block_threshold` not accepted with
+  `install --force`; findings are marked new or existing), `expired`. No create, delete
+  or rename. Apply re-checks the whole skill. Saves are logged as `mcp serve`, audits in
+  `audit.log`. A legacy `registry.yaml` keeps every skill read-only until migrated.
+- With `--http`, the same server and token also publish an index for Executor's
+  `wellKnownSkills` loader at `/.well-known/agent-skills/index.json` (Executor's format,
+  not discovery draft v0.2). It leaves out skills Executor would reject (non-text
+  `metadata`/`license`/`allowed-tools`, a file over 2 MB or not UTF-8, a file name with `%` or `\`, a name used twice)
+  and errors past 1,000 files, 20 MB, or a 2 MB `index.json`; narrow with `--target`. `--check` lists them.
 - Noninteractive `import` without a name only lists candidates. Use `--replace` only
   when replacing is intended.
 - An `update` with the message `same settings, laid out one field per line` is a
@@ -107,12 +123,14 @@ mcp:
 | `transport` | Optional `stdio` or `streamable-http`; inferred when omitted. Legacy SSE is not supported |
 | `targets` | Receiving clients for this server. `[]` keeps it in Skillshare only |
 | `tools` | `{allow, deny}`: which tools reach the model, translated per Agent. See [Tool policy](#tool-policy) |
+| `options` | `{<client>: {field: value}}`: other Agents' native per-server fields written as given, e.g. `codex: {default_tools_approval_mode: approve}`, `claude: {timeout: 600000}`. Values: scalars, lists of scalars, or mappings; no `null`. Managed fields (`url`, `command`, `env`, `headers`, `type`, `enabled`, Codex `enabled_tools`…) and `options.pi` (use `piOptions`) are refused; credentials (by field name or a URL password) must be a whole-value environment reference in the Agent's own syntax (`${VAR}`, `{env:VAR}`), never plain text, and options of an Agent that reads no references there (Codex, Antigravity, Claude Desktop, Goose, Junie, LM Studio, Warp) cannot hold one; not allowed with `disabled`. Sync removes an option it wrote once the source drops it |
 | `piOptions` | Other Pi built-in per-server fields. See [Pi](#pi) |
 | `disabled` | `true` only, no connection fields, and a project must be in scope: project mode, or a root under `mcp.projects`. See [Turn off a global server in one project](#turn-off-a-global-server-in-one-project) |
 
 Client IDs: `claude`, `codex`, `cursor`, `vscode`, `opencode`, `kilocode`, `grok`,
 `antigravity`, `amp`, `claude-desktop`, `cline`, `copilot`, `factory`, `gemini`, `goose`,
-`junie`, `kiro`, `lmstudio`, `warp`, `windsurf`, `pi`, `omp`. Scope and transport support vary by
+`junie`, `kiro`, `lmstudio`, `warp`, `windsurf`, `pi`, `omp`. `--target` and `--from` also take `agy` and
+`antigravity-cli` as `antigravity`. Scope and transport support vary by
 client; the website's MCP command reference lists every native destination and limit.
 Names such as `company-docs` (letters, digits, hyphens) work across all clients.
 
@@ -124,7 +142,8 @@ Names such as `company-docs` (letters, digits, hyphens) work across all clients.
 - A differing unmanaged entry is a conflict. Resolve it with `mcp import --replace` or
   an explicit per-entry replacement. Inspect conflicts with `skillshare mcp --json`.
 - Only the fields Skillshare writes are compared. Agent-only fields in an entry, such
-  as timeouts, are kept across syncs. Tool filters come from `tools`.
+  as timeouts, are kept across syncs; fields set through `options` are written and
+  removed by sync. Tool filters come from `tools`.
 - Turning a managed server off by hand in the Agent's file (`enabled: false`,
   `disabled: true`) is reported as a conflict. Pi and OMP connection entries preserve
   `enabled` as an Agent setting; changing it alone is not a conflict.
@@ -168,11 +187,12 @@ setups usually go wrong.
 
 - Another account: a target with `agent:` and `config_dir: <dir>` is an MCP target by its own
   name, and `mcp import --from <name>` reads that file. `claude` (`CLAUDE_CONFIG_DIR`) writes
-  `<dir>/.claude.json`, `codex` (`CODEX_HOME`) writes `<dir>/config.toml`, `pi` and `omp`
+  `<dir>/.claude.json`, `codex` (`CODEX_HOME`) writes `<dir>/config.toml`, `opencode` (`OPENCODE_CONFIG_DIR`)
+  writes `<dir>/opencode.json`, `pi` and `omp`
   (`PI_CODING_AGENT_DIR`) write `<dir>/mcp.json`. Global scope only; a project
   uses the Agent's own name, and a project's off switch goes to every account that has the
   server.
-- Account shell overrides: when `CLAUDE_CONFIG_DIR`, `CODEX_HOME` or
+- Account shell overrides: when `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `OPENCODE_CONFIG_DIR` or
   `PI_CODING_AGENT_DIR` matches a declared account's `config_dir`, the plain Agent
   uses its default home and sync warns. Unrelated overrides are still honored.
   Existing directory aliases, including symlinks and filesystem case aliases, match.
@@ -212,7 +232,7 @@ setups usually go wrong.
   definitions are rejected without touching the file; convert them to tables first.
 - `cwd`, `http_headers_helper`, approval modes, timeouts (`startup_timeout_sec`) and
   the `oauth` table have no portable form. Import leaves them out with a warning, and
-  sync keeps them in the existing entry. `enabled_tools`/`disabled_tools` come from
+  sync keeps them in the existing entry; set them from the source with `options.codex`. `enabled_tools`/`disabled_tools` come from
   `tools` (exact names only) and import back into it.
 - Servers bundled by a Codex plugin live under `plugins.<plugin>.mcp_servers` and are
   not managed here.

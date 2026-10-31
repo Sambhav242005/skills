@@ -4,12 +4,12 @@ description: |
   Manage skills, agents, extras, hooks, plugins, and MCP connection settings with the Skillshare CLI.
   Use when the user asks to configure or run Skillshare, install or sync resources
   across AI tools, manage shared memory notes, review a session for lessons or dream over saved memories,
-  import MCP settings, manage targets, audit skills, recover backups,
+  import MCP settings, manage targets and project folders, audit skills, recover backups,
   or troubleshoot Skillshare configuration and sync. Covers global and project modes,
   noninteractive automation, and guidance for the terminal UI.
 argument-hint: "[command] [target] [--json] [--dry-run] [-p|-g]"
 metadata:
-  version: v0.25.11
+  version: v0.28.1
 ---
 
 # Skillshare CLI
@@ -25,6 +25,14 @@ Check `skillshare <command> --help` if the installed version differs from these 
   when location matters instead of relying on auto-detection.
 - Skills are directories containing `SKILL.md`; agents are single Markdown files.
   Source paths can be customized. Use the configured sources instead of assuming defaults.
+- Tracked `skills/<known-agent>/<skill-path>/SKILL.md` copies form one logical skill
+  per repository/prefix/suffix. Merge/copy select the exact agent variant (including
+  aliases and account `agent:` identity). Recognition requires the same suffix under
+  two distinct canonical agents. Compatible targets sharing a folder select the
+  union of their agent identities; a universal-only target does not infer an agent.
+  Status counts logical skills and physical variants; lists and sync operations retain
+  physical names. Explicit targets/overrides and physical filters still apply.
+  Whole-directory symlink mode exposes all variants. See [sync.md](references/sync.md).
 - Use native agents targets for agents. Use extras for arbitrary file resources or when
   flattening/content transformation is required; `extension:` works only on extras targets.
 - Shared memory notes live in the `memory` extra. Use `extras memory` to manage Markdown
@@ -81,16 +89,21 @@ skillshare mcp --json
 `doctor` exits 1 when it finds errors. Audit uses `--format json`; JSON flags and
 TUI availability vary by command. See the relevant reference rather than assuming parity.
 
-### Install, update, and sync skills
+### Track an upstream repository or install selected skills
 
-```bash
-skillshare install user/repo -s pdf,commit
-skillshare install user/repo --track -b develop --all
-skillshare sync
-skillshare check --json
-skillshare update my-skill
-skillshare sync
-```
+Choose the resource and scope before installing. Use `-g` for user-wide resources
+or `-p` for this project; keep that scope on preview, apply, update, and sync.
+
+| Intent | Command |
+|--------|---------|
+| Keep an upstream skill collection as one Git checkout | `skillshare install owner/repo --track --name team -g` |
+| Install only named skills with their source metadata | `skillshare install owner/repo -s pdf,commit -g` |
+| Install all discovered skills individually | `skillshare install owner/repo --all -g` |
+| Manage a complete native plugin, including hooks/MCP | Use `plugin discover` and `plugin add`; see below |
+
+For the scoped preview → apply → update → sync workflow, read
+[install.md](references/install.md#track-a-collection-without-a-picker). It covers
+following the latest upstream branch, rejected flag combinations, and target filters.
 
 For project setup, use `init -p`, then `install -p` and `sync -p`. Rehydrate configured
 remote dependencies with `install` without a source. For full flag details and agents,
@@ -127,6 +140,22 @@ Use `move` instead of `mv` for installed skills: it keeps their install records,
 nothing is downloaded again. It does not sync; run `sync` afterwards. Read
 [install.md](references/install.md) for refusals and project mode.
 
+### Project folders from the global config
+
+```bash
+skillshare project list --json
+skillshare project add ~/work/app --target claude,codex --skills-mode copy --dry-run
+skillshare project add ~/work/app --target claude,codex --skills-mode copy --sync
+skillshare project edit app --skills-include 'frontend-*'
+skillshare project sync app --json
+skillshare project remove app --dry-run --json
+```
+
+`project` always uses the global config, including inside a repo; it does not accept
+`-p`. Edit filters replace lists. Removal detaches skills and keeps agent files;
+JSON removal requires `--yes` unless previewing. Read [targets.md](references/targets.md)
+for saved-then-sync failures, retries, and partial removal results.
+
 ### MCP settings
 
 ```bash
@@ -142,18 +171,12 @@ editing, import conflicts, credentials, backups, and human-operated TUI commands
 
 ### Complete plugins
 
-```bash
-skillshare plugin list --json
-skillshare plugin add ./my-plugin --target claude --dry-run --json
-skillshare plugin disable demo --target claude --no-tui
-skillshare sync plugins demo --dry-run --json
-```
-
-Run only the requested operation. `add` installs a whole native package; `import`
-adopts an existing installation. Plugin enable/disable saves sync selection only;
-the next `sync plugins` installs or removes the managed target. It is excluded
-from `sync --all`. Inspect `targetDefinitions` for supported operations and scopes;
-format discovery alone does not mean installation is supported. Read [plugins.md](references/plugins.md) before applying changes.
+Use `plugin discover` and `plugin add` for a complete native package; `plugin import`
+adopts an existing native installation. Run only the requested operation. Read
+[plugins.md](references/plugins.md) before applying changes; it covers the scoped
+upstream workflow, supported targets, and source-ref rules.
+`plugin check/update` handles upstream changes; `sync plugins` reconciles target
+selection. Plugins are excluded from `sync --all`.
 
 ### Skill hubs
 
